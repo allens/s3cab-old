@@ -9,13 +9,13 @@
   "bugs": "https://github.com/allens/s3cab/issues",
   "devDependencies": {
     "@oclif/dev-cli": "^1.26.0",
-    "@types/node": "^10.17.60",
+    "@types/node": "^16.11.9",
     "eslint": "^8.2.0",
     "eslint-config-oclif": "^4.0.0",
     "eslint-config-oclif-typescript": "^1.0.2",
     "globby": "^10.0.2",
     "rimraf": "^3.0.2",
-    "ts-node": "^8.10.2",
+    "ts-node": "^10.4.0",
     "typescript": "^3.9.10"
   },
   "engines": {
