@@ -9,35 +9,49 @@ Content addressable backups to S3 with open and portable data format
 [![License](https://img.shields.io/npm/l/s3cab.svg)](https://github.com/allens/s3cab/blob/master/package.json)
 
 <!-- toc -->
-
-- [Usage](#usage)
-- [Commands](#commands)
+* [s3cab](#s3cab)
+* [Usage](#usage)
+* [Commands](#commands)
 <!-- tocstop -->
 
 # Usage
 
 <!-- usage -->
-
 ```sh-session
 $ npm install -g s3cab
 $ s3cab COMMAND
 running command...
 $ s3cab (-v|--version|version)
-s3cab/0.0.0 win32-x64 node-v16.13.0
+s3cab/0.0.0 win32-x64 node-v14.18.1
 $ s3cab --help [COMMAND]
 USAGE
   $ s3cab COMMAND
 ...
 ```
-
 <!-- usagestop -->
 
 # Commands
 
 <!-- commands -->
+* [`s3cab backup [FILE]`](#s3cab-backup-file)
+* [`s3cab hello [FILE]`](#s3cab-hello-file)
+* [`s3cab help [COMMAND]`](#s3cab-help-command)
 
-- [`s3cab hello [FILE]`](#s3cab-hello-file)
-- [`s3cab help [COMMAND]`](#s3cab-help-command)
+## `s3cab backup [FILE]`
+
+describe the command here
+
+```
+USAGE
+  $ s3cab backup [FILE]
+
+OPTIONS
+  -f, --force
+  -h, --help       show CLI help
+  -n, --name=name  name to print
+```
+
+_See code: [src/commands/backup.ts](https://github.com/allens/s3cab/blob/v0.0.0/src/commands/backup.ts)_
 
 ## `s3cab hello [FILE]`
 
@@ -74,6 +88,5 @@ OPTIONS
   --all  see all commands in CLI
 ```
 
-_See code: [@oclif/plugin-help](https://github.com/oclif/plugin-help/blob/v3.2.5/src/commands/help.ts)_
-
+_See code: [@oclif/plugin-help](https://github.com/oclif/plugin-help/blob/v3.2.7/src/commands/help.ts)_
 <!-- commandsstop -->
