@@ -1,5 +1,4 @@
-s3cab
-=====
+# s3cab
 
 Content addressable backups to S3 with open and portable data format
 
@@ -10,11 +9,15 @@ Content addressable backups to S3 with open and portable data format
 [![License](https://img.shields.io/npm/l/s3cab.svg)](https://github.com/allens/s3cab/blob/master/package.json)
 
 <!-- toc -->
-* [Usage](#usage)
-* [Commands](#commands)
+
+- [Usage](#usage)
+- [Commands](#commands)
 <!-- tocstop -->
+
 # Usage
+
 <!-- usage -->
+
 ```sh-session
 $ npm install -g s3cab
 $ s3cab COMMAND
@@ -26,11 +29,15 @@ USAGE
   $ s3cab COMMAND
 ...
 ```
+
 <!-- usagestop -->
+
 # Commands
+
 <!-- commands -->
-* [`s3cab hello [FILE]`](#s3cab-hello-file)
-* [`s3cab help [COMMAND]`](#s3cab-help-command)
+
+- [`s3cab hello [FILE]`](#s3cab-hello-file)
+- [`s3cab help [COMMAND]`](#s3cab-help-command)
 
 ## `s3cab hello [FILE]`
 
@@ -68,4 +75,5 @@ OPTIONS
 ```
 
 _See code: [@oclif/plugin-help](https://github.com/oclif/plugin-help/blob/v3.2.5/src/commands/help.ts)_
+
 <!-- commandsstop -->

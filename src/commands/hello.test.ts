@@ -1,22 +1,22 @@
-import Hello from '../../src/commands/hello'
-import { stdout } from 'stdout-stderr'
+import Hello from "../../src/commands/hello";
+import { stdout } from "stdout-stderr";
 
-describe('hello', () => {
+describe("hello", () => {
   beforeEach(() => {
-    stdout.start()
-  })
+    stdout.start();
+  });
 
   afterEach(() => {
-    stdout.stop()
-  })
+    stdout.stop();
+  });
 
-  it('runs hello', async () => {
-    await Hello.run()
-    expect(stdout.output).toContain('hello world')
-  })
+  it("runs hello", async () => {
+    await Hello.run();
+    expect(stdout.output).toContain("hello world");
+  });
 
-  it('runs hello --name jeff', async () => {
-    await Hello.run(['--name', 'jeff'])
-    expect(stdout.output).toContain('hello jeff')
-  })
-})
+  it("runs hello --name jeff", async () => {
+    await Hello.run(["--name", "jeff"]);
+    expect(stdout.output).toContain("hello jeff");
+  });
+});
