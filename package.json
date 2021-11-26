@@ -62,6 +62,7 @@
   },
   "types": "lib/index.d.ts",
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.42.0",
     "@oclif/command": "^1.8.4",
     "@oclif/config": "^1.17.1",
     "@oclif/plugin-help": "^3.2.7",
