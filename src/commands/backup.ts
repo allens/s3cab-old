@@ -1,4 +1,5 @@
 import { Command, flags } from "@oclif/command";
+import { ListBucketsCommand, S3Client } from "@aws-sdk/client-s3";
 
 export default class Backup extends Command {
   static description = "describe the command here";
@@ -21,5 +22,13 @@ export default class Backup extends Command {
     if (args.file && flags.force) {
       this.log(`you input --force and --file: ${args.file}`);
     }
+
+    const s3 = new S3Client({});
+
+    const listBuckets = new ListBucketsCommand({});
+
+    const response = await s3.send(listBuckets);
+
+    this.log("list buckets", response);
   }
 }
