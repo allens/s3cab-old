@@ -1,17 +1,12 @@
 import { Command, flags } from "@oclif/command";
 
+import { Bucket } from "../bucket";
+import { FileInfo } from "../types";
 import { T } from "../t";
 import { checksumFile } from "../checksum-file";
 import { cli } from "cli-ux";
 import { promises as fsPromises } from "fs";
 import { walk } from "../walk";
-
-interface FileInfo {
-  path: string;
-  mtimeMs: number;
-  size: number;
-  hash?: string;
-}
 
 async function isModified(fileInfo: FileInfo) {
   if (fileInfo !== undefined) {
@@ -25,14 +20,11 @@ async function isModified(fileInfo: FileInfo) {
 }
 
 async function getFileInfo(path: string) {
-  try {
-    const { mtimeMs, size } = await fsPromises.stat(path);
-    const hash = await checksumFile(path);
-    return { path, hash, mtimeMs, size };
-  } catch (error) {
-    console.error(error);
-  }
+  const { mtimeMs, size } = await fsPromises.stat(path);
+  const hash = await checksumFile(path);
+  return { path, hash, mtimeMs, size };
 }
+
 export default class Backup extends Command {
   static description = "describe the command here";
 
@@ -50,11 +42,10 @@ export default class Backup extends Command {
     const { args, flags } = this.parse(Backup);
 
     // Read config
-    const rootFolder = "C:\\Program Files";
+    const rootFolder = "test/fixtures/my-precious-data";
+    // const rootFolder = "C:\\Program Files";
     // const rootFolder = "C:\\Users\\shielsa\\OneDrive - Innovyze, INC";
     // const rootFolder = "C:\\Windows";
-    const bucket = "s3cab-testing";
-    const prefix = "foo";
 
     const currentSnapshot = new Map<string, FileInfo>();
 
@@ -108,16 +99,27 @@ export default class Backup extends Command {
       this.write(newSnapshot);
     }
 
+    const bucketName = "s3cab-testing";
+    const prefix = "foo";
+    const bucket = new Bucket(bucketName, prefix);
+
     const backupPaths = modifiedPaths.concat(newPaths);
 
     for (const path of backupPaths) {
-      cli.action.start(path);
-      const fileInfo = await getFileInfo(path);
-      cli.action.stop(fileInfo?.hash);
+      try {
+        const fileInfo = await getFileInfo(path);
+        cli.action.start(`${fileInfo.hash}: ${fileInfo.path}`);
 
-      // const objectExists = getObjectExists();
-      //   fileInfo.hash = await checksumFile(path);
-      //   this.log(`${fileInfo}`);
+        const objectExists = await bucket.headObject(fileInfo.hash);
+
+        if (!objectExists) {
+          await bucket.putObject(fileInfo);
+        }
+
+        cli.action.stop();
+      } catch (error) {
+        cli.action.stop(`${error}`);
+      }
     }
 
     // const process = new Map([...modified, ...added]);
