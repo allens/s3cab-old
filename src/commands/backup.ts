@@ -1,6 +1,8 @@
 import { Command, flags } from "@oclif/command";
 
 import { T } from "../t";
+import { checksumFile } from "../checksum-file";
+import { cli } from "cli-ux";
 import { promises as fsPromises } from "fs";
 import { walk } from "../walk";
 
@@ -9,6 +11,27 @@ interface FileInfo {
   mtimeMs: number;
   size: number;
   hash?: string;
+}
+
+async function isModified(fileInfo: FileInfo) {
+  if (fileInfo !== undefined) {
+    try {
+      const { mtimeMs, size } = await fsPromises.stat(fileInfo.path);
+      return fileInfo.mtimeMs !== mtimeMs || fileInfo.size !== size;
+    } catch (error) {
+      console.error(error);
+    }
+  }
+}
+
+async function getFileInfo(path: string) {
+  try {
+    const { mtimeMs, size } = await fsPromises.stat(path);
+    const hash = await checksumFile(path);
+    return { path, hash, mtimeMs, size };
+  } catch (error) {
+    console.error(error);
+  }
 }
 export default class Backup extends Command {
   static description = "describe the command here";
@@ -57,55 +80,45 @@ export default class Backup extends Command {
     this.log(`  matched:  ${matchedPaths.length}`);
 
     // Second pass: Look for modified files
+    const modifiedPaths: string[] = [];
+
     if (matchedPaths.length) {
+      const newSnapshot: FileInfo[] = [];
+
       T.start(`Comparing`);
 
-      const modified: string[] = [];
       for (const path of matchedPaths) {
-        try {
-          const stat = await fsPromises.stat(path);
-          const current = currentSnapshot.get(path);
-          if (current) {
-            if (
-              current.size !== stat.size ||
-              current.mtimeMs !== stat.mtimeMs
-            ) {
-              modified.push(path);
-            }
+        const fileInfo = currentSnapshot.get(path);
+        if (fileInfo) {
+          const modified = await isModified(fileInfo);
+          if (modified) {
+            modifiedPaths.push(path);
           } else {
-            this.error("MISSING AGAIN");
+            newSnapshot.push(fileInfo);
           }
-        } catch (error) {
-          this.error(`${error}`);
+        } else {
+          this.warn(`${path} is now missing`);
         }
       }
       T.stop();
 
-      this.log(`  modified: ${modified.length}`);
+      this.log(`  modified: ${modifiedPaths.length}`);
+
+      // Write new snapshot
+      this.write(newSnapshot);
     }
 
-    const newSnapshot = new Map<string, FileInfo>();
-    // const modified = new Map<string, FileInfo>();
+    const backupPaths = modifiedPaths.concat(newPaths);
 
-    // for await (const path of walk(rootFolder)) {
-    //   const stat = await fsPromises.stat(path);
-    //   const fileInfo = currentSnapshot.get(path);
-    //   if (fileInfo) {
-    //     deleted.delete(path);
-    //     if (stat.mtimeMs === fileInfo.mtimeMs && stat.size === fileInfo.size) {
-    //       newSnapshot.set(path, fileInfo);
-    //     } else {
-    //       modified.set(path, fileInfo);
-    //     }
-    //   } else {
-    //     const { mtimeMs, size } = stat;
-    //     added.set(path, { path, mtimeMs, size });
-    //   }
-    // }
+    for (const path of backupPaths) {
+      cli.action.start(path);
+      const fileInfo = await getFileInfo(path);
+      cli.action.stop(fileInfo?.hash);
 
-    // this.log(
-    //   `added ${added.size}, modified ${modified.size}, deleted ${deleted.size} (took ${T.sec})`
-    // );
+      // const objectExists = getObjectExists();
+      //   fileInfo.hash = await checksumFile(path);
+      //   this.log(`${fileInfo}`);
+    }
 
     // const process = new Map([...modified, ...added]);
 
@@ -120,5 +133,9 @@ export default class Backup extends Command {
     // const response = await s3.send(listBuckets);
 
     // this.log("list buckets", response);
+  }
+
+  write(fileInfo: FileInfo[]) {
+    this.log(`WROTING fileInfo ${fileInfo.length}`);
   }
 }
