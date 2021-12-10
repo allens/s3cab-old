@@ -1,29 +1,10 @@
 import { Command, flags } from "@oclif/command";
+import { FileInfo, getFileInfo, isModified, walk } from "../util/file";
 
 import { Bucket } from "../bucket";
-import { FileInfo } from "../types";
-import { T } from "../t";
-import { checksumFile } from "../checksum-file";
+import { T } from "../util/logging";
 import { cli } from "cli-ux";
-import { promises as fsPromises } from "fs";
-import { walk } from "../walk";
-
-async function isModified(fileInfo: FileInfo) {
-  if (fileInfo !== undefined) {
-    try {
-      const { mtimeMs, size } = await fsPromises.stat(fileInfo.path);
-      return fileInfo.mtimeMs !== mtimeMs || fileInfo.size !== size;
-    } catch (error) {
-      console.error(error);
-    }
-  }
-}
-
-async function getFileInfo(path: string) {
-  const { mtimeMs, size } = await fsPromises.stat(path);
-  const hash = await checksumFile(path);
-  return { path, hash, mtimeMs, size };
-}
+import { getS3Client } from "../util/aws";
 
 export default class Backup extends Command {
   static description = "describe the command here";
@@ -46,6 +27,7 @@ export default class Backup extends Command {
     // const rootFolder = "C:\\Program Files";
     // const rootFolder = "C:\\Users\\shielsa\\OneDrive - Innovyze, INC";
     // const rootFolder = "C:\\Windows";
+    const s3Client = getS3Client("thehousecat");
 
     const currentSnapshot = new Map<string, FileInfo>();
 
@@ -101,7 +83,9 @@ export default class Backup extends Command {
 
     const bucketName = "s3cab-testing";
     const prefix = "foo";
-    const bucket = new Bucket(bucketName, prefix);
+    const bucket = new Bucket(s3Client, bucketName, prefix);
+
+    await bucket.init();
 
     const backupPaths = modifiedPaths.concat(newPaths);
 
@@ -112,29 +96,16 @@ export default class Backup extends Command {
 
         const objectExists = await bucket.headObject(fileInfo.hash);
 
-        if (!objectExists) {
+        if (objectExists) {
+          cli.action.stop("found");
+        } else {
+          cli.action.stop("not found");
           await bucket.putObject(fileInfo);
         }
-
-        cli.action.stop();
       } catch (error) {
         cli.action.stop(`${error}`);
       }
     }
-
-    // const process = new Map([...modified, ...added]);
-
-    // for (const [path, fileInfo] of process) {
-    //   fileInfo.hash = await checksumFile(path);
-    //   this.log(`${fileInfo}`);
-    // }
-    // const s3 = new S3Client({});
-
-    // const listBuckets = new ListBucketsCommand({});
-
-    // const response = await s3.send(listBuckets);
-
-    // this.log("list buckets", response);
   }
 
   write(fileInfo: FileInfo[]) {
