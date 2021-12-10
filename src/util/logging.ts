@@ -12,14 +12,14 @@ export class T {
   static reset() {
     T._t = performance.now();
   }
-  static done() {
-    return T.seconds ? `done in ${T.seconds} seconds` : "done";
+  static done(msg = "done") {
+    return T.seconds ? `${msg} in ${T.seconds} seconds` : msg;
   }
   static start(action: string) {
     T.reset();
     cli.action.start(action);
   }
-  static stop() {
-    cli.action.stop(T.done());
+  static stop(msg?: string) {
+    cli.action.stop(T.done(msg));
   }
 }

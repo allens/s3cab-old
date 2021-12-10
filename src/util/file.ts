@@ -1,13 +1,12 @@
-import { createReadStream, promises as fsPromises } from "fs";
-
 import { createHash } from "crypto";
+import { createReadStream, promises as fsPromises } from "fs";
 import { join } from "path";
 
 export interface FileInfo {
   path: string;
   mtimeMs: number;
   size: number;
-  hash?: string;
+  hash: string;
 }
 
 export type FileInfoMap = Map<string, FileInfo>;

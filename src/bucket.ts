@@ -1,12 +1,12 @@
 import {
   GetBucketLocationCommand,
   HeadObjectCommand,
+  PutObjectCommand,
   S3Client,
 } from "@aws-sdk/client-s3";
-
-import { FileInfo } from "./util/file";
-import { isMetadataBearer } from "./util/aws";
 import { join } from "path";
+import { isMetadataBearer } from "./util/aws";
+import { FileInfo } from "./util/file";
 
 export class Bucket {
   constructor(
@@ -22,10 +22,9 @@ export class Bucket {
   }
 
   async headObject(hash: string) {
-    const key = join(this.prefix, hash);
     const command = new HeadObjectCommand({
       Bucket: this.bucket,
-      Key: key,
+      Key: join(this.prefix, hash),
     });
 
     try {
@@ -40,6 +39,16 @@ export class Bucket {
   }
 
   async putObject(fileInfo: FileInfo) {
-    return true;
+    const command = new PutObjectCommand({
+      Bucket: this.bucket,
+      Key: join(this.prefix, fileInfo.hash),
+    });
+
+    try {
+      await this.s3Client.send(command);
+    } catch (error) {
+      console.log(error);
+      throw error;
+    }
   }
 }
