@@ -1,7 +1,21 @@
 import { Command, flags } from "@oclif/command";
 import { Bucket } from "../bucket";
+import {
+  getLatestSnapshotPath,
+  getNewSnapshotPath,
+  snapshotRead,
+  snapshotWrite,
+} from "../snapshot";
+import { Uploader } from "../uploader";
 import { getS3Client } from "../util/aws";
-import { FileInfo, getFileInfo, isModified, walk } from "../util/file";
+import {
+  FileInfo,
+  getFileInfo,
+  getIsNewOrModifiedFilter,
+  isModified,
+  walk,
+  walkSync,
+} from "../util/file";
 import { T } from "../util/logging";
 
 export default class Backup extends Command {
@@ -28,20 +42,52 @@ export default class Backup extends Command {
     // const rootFolder = "C:\\Users\\shielsa\\OneDrive - Innovyze, INC";
     // const rootFolder = "C:\\Windows";
 
-    const { matchedPaths, newPaths, missingPaths } = await this.findFiles(
-      rootFolder
+    const unmodified: FileInfo[] = [];
+    const added: string[] = [];
+
+    T.start(`Searching "${rootFolder}"`);
+    let filesToBackup = Array.from(walkSync(rootFolder));
+    T.stop(`found ${filesToBackup.length} files`);
+
+    const latestSnapshotPath = await getLatestSnapshotPath();
+    const latestSnapshot = await snapshotRead(latestSnapshotPath);
+
+    const deleted = filesToBackup.filter((file) => latestSnapshot.has(file));
+    filesToBackup = filesToBackup.filter(
+      getIsNewOrModifiedFilter(latestSnapshot, added, unmodified)
     );
-    this.log("Compared with previous snapshot:");
-    this.log(`  new:      ${newPaths.length}`);
-    this.log(`  missing:  ${missingPaths.size}`);
-    this.log(`  matched:  ${matchedPaths.length}`);
 
-    const { modifiedPaths, unModified } = await this.findModified(matchedPaths);
-    this.log(`  modified: ${modifiedPaths.length}`);
+    this.log(`Compared with previous snapshot ${latestSnapshotPath}`);
+    this.log(`  ${deleted.length} files have been deleted`);
+    this.log(`  ${unmodified.length} files are unchanged`);
 
-    await this.appendSnapshot(unModified);
+    const newSnapshotPath = await getNewSnapshotPath();
 
-    await this.uploadFiles(modifiedPaths.concat(newPaths));
+    const modifiedCount = filesToBackup.length - added.length;
+    this.log(`Backing up to new snapshot ${newSnapshotPath}`);
+    this.log(`  ${added.length} new files`);
+    this.log(`  ${modifiedCount} modified files`);
+
+    await snapshotWrite(newSnapshotPath, unmodified);
+
+    const uploader = new Uploader(newSnapshotPath, await this.getBucket());
+
+    await uploader.uploadFiles(filesToBackup);
+
+    // const { matchedPaths, newPaths, missingPaths } = await this.findFiles(
+    //   rootFolder
+    // );
+    // this.log("Compared with previous snapshot:");
+    // this.log(`  new:      ${newPaths.length}`);
+    // this.log(`  missing:  ${missingPaths.size}`);
+    // this.log(`  matched:  ${matchedPaths.length}`);
+
+    // const { modifiedPaths, unModified } = await this.findModified(matchedPaths);
+    // this.log(`  modified: ${modifiedPaths.length}`);
+
+    // await this.appendSnapshot(unModified);
+
+    // await this.uploadFiles(modifiedPaths.concat(newPaths));
   }
 
   private async appendSnapshot(fileInfo: FileInfo[]) {

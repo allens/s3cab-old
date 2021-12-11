@@ -1,5 +1,10 @@
 import { createHash } from "crypto";
-import { createReadStream, promises as fsPromises } from "fs";
+import {
+  createReadStream,
+  promises as fsPromises,
+  readdirSync,
+  statSync,
+} from "fs";
 import { join } from "path";
 
 export interface FileInfo {
@@ -27,10 +32,37 @@ export async function* walk(dir: string): AsyncGenerator<string> {
   }
 }
 
+export function* walkSync(dir: string): Generator<string> {
+  try {
+    const files = readdirSync(dir, { withFileTypes: true });
+    for (const file of files) {
+      const path = join(dir, file.name);
+      if (file.isDirectory()) {
+        yield* walkSync(path);
+      } else if (file.isFile()) {
+        yield path;
+      }
+    }
+  } catch (error) {
+    console.error(`${error}`);
+  }
+}
+
 export async function isModified(fileInfo: FileInfo) {
   if (fileInfo !== undefined) {
     try {
       const { mtimeMs, size } = await fsPromises.stat(fileInfo.path);
+      return fileInfo.mtimeMs !== mtimeMs || fileInfo.size !== size;
+    } catch (error) {
+      console.error(error);
+    }
+  }
+}
+
+export function isModifiedSync(fileInfo: FileInfo) {
+  if (fileInfo !== undefined) {
+    try {
+      const { mtimeMs, size } = statSync(fileInfo.path);
       return fileInfo.mtimeMs !== mtimeMs || fileInfo.size !== size;
     } catch (error) {
       console.error(error);
@@ -52,4 +84,22 @@ function checksumFile(path: string) {
     stream.on("data", (data) => hash.update(data));
     stream.on("end", () => resolve(hash.digest("hex")));
   });
+}
+
+export function getIsNewOrModifiedFilter(
+  snapshot: Map<string, FileInfo>,
+  added?: string[],
+  unmodified?: FileInfo[]
+) {
+  return function (path: string) {
+    let modified = true;
+    const fileInfo = snapshot.get(path);
+    if (fileInfo) {
+      modified = isModifiedSync(fileInfo) !== false;
+      if (!modified) unmodified?.push(fileInfo);
+    } else {
+      added?.push(path);
+    }
+    return modified;
+  };
 }
