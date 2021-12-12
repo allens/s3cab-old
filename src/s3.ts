@@ -18,28 +18,30 @@ function is404Error(error: unknown) {
   return isMetadataBearer(error) && error.$metadata.httpStatusCode === 404;
 }
 
+async function getBucketRegion(s3Client: S3Client, bucket: string) {
+  const { LocationConstraint } = await s3Client.send(
+    new GetBucketLocationCommand({ Bucket: bucket })
+  );
+  return LocationConstraint;
+}
+
 export class Bucket {
   private s3Client = new S3Client({});
 
   constructor(private bucket: string, private prefix: string) {}
 
-  async init(profile: string) {
+  async init(profile?: string) {
+    let { credentials } = this.s3Client.config;
     if (profile) {
-      this.s3Client = new S3Client({
-        credentials: fromIni({ profile }),
-      });
+      credentials = fromIni({ profile });
+      this.s3Client = new S3Client({ credentials });
     }
 
-    const { LocationConstraint } = await this.s3Client.send(
-      new GetBucketLocationCommand({ Bucket: this.bucket })
-    );
+    const region = await getBucketRegion(this.s3Client, this.bucket);
 
-    const { region, credentials } = this.s3Client.config;
-    if (region !== LocationConstraint)
-      this.s3Client = new S3Client({
-        region: LocationConstraint,
-        credentials,
-      });
+    if (region !== this.s3Client.config.region) {
+      this.s3Client = new S3Client({ credentials, region });
+    }
   }
 
   async headObject(hash: string) {
