@@ -4,6 +4,7 @@ import {
   PutObjectCommand,
   S3Client,
 } from "@aws-sdk/client-s3";
+import { createReadStream } from "fs";
 import { is404Error } from "./util/aws";
 import { FileInfo } from "./util/file";
 
@@ -37,9 +38,19 @@ export class Bucket {
   }
 
   async putObject(fileInfo: FileInfo) {
+    const fileStream = createReadStream(fileInfo.path);
+
     const command = new PutObjectCommand({
       Bucket: this.bucket,
       Key: this.key(fileInfo.hash),
+      Metadata: {
+        "x-amz-meta-s3pac-path": fileInfo.path,
+        "x-amz-meta-s3pac-size": fileInfo.size.toString(),
+        "x-amz-meta-s3pac-mtimeMs": fileInfo.mtimeMs.toString(),
+        "x-amz-meta-s3pac-hash": fileInfo.hash,
+        "x-amz_meta-s3pac-mtime": new Date(fileInfo.mtimeMs).toString(),
+      },
+      Body: fileStream,
     });
 
     try {

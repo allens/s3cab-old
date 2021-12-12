@@ -11,14 +11,17 @@ export class Uploader {
   async uploadFiles(backupPaths: string[]) {
     for (const path of backupPaths) {
       try {
-        T.start(`Calculating hash for ${path}`);
+        T.start(`${path}: Calculating hash`);
         const fileInfo = await getFileInfo(path);
+        T.stop();
 
         const objectExists = await this.objectExists(fileInfo);
+
         if (objectExists) {
-          T.stop(`${fileInfo.hash} (already uploaded)`);
+          console.log(
+            `    Skipping upload of ${fileInfo.hash}, already exists in bucket.`
+          );
         } else {
-          T.stop(`${fileInfo.hash}`);
           await this.upload(fileInfo);
         }
 
@@ -37,7 +40,7 @@ export class Uploader {
         return true;
       } else {
         console.warn(
-          `Size mismatch: ContentLength = ${ContentLength}, size = ${fileInfo.size} `
+          `    WARNING: Size mismatch - ContentLength is ${ContentLength} but size = ${fileInfo.size} `
         );
       }
     }
@@ -46,7 +49,7 @@ export class Uploader {
 
   private async upload(fileInfo: FileInfo) {
     try {
-      T.start(`    Uploading ${prettyBytes(fileInfo.size)}`);
+      T.start(`    Uploading ${fileInfo.hash} (${prettyBytes(fileInfo.size)})`);
       await this.bucket.putObject(fileInfo);
       T.stop();
     } catch (error) {
