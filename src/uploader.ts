@@ -1,9 +1,10 @@
 import prettyBytes = require("pretty-bytes");
 
-import { Bucket } from "./bucket";
-import { snapshotWrite } from "./snapshot";
 import { FileInfo, getFileInfo } from "./util/file";
+
+import { Bucket } from "./s3";
 import { T } from "./util/logging";
+import { snapshotWrite } from "./snapshot";
 
 export class Uploader {
   constructor(private snapshot: string, private bucket: Bucket) {}
@@ -27,7 +28,7 @@ export class Uploader {
 
         await snapshotWrite(this.snapshot, [fileInfo]);
       } catch (error) {
-        T.stop(`${error}`);
+        console.error(`${error}`);
       }
     }
   }

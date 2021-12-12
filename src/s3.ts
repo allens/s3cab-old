@@ -4,21 +4,42 @@ import {
   PutObjectCommand,
   S3Client,
 } from "@aws-sdk/client-s3";
-import { createReadStream } from "fs";
-import { is404Error } from "./util/aws";
+
 import { FileInfo } from "./util/file";
+import { MetadataBearer } from "@aws-sdk/types";
+import { createReadStream } from "fs";
+import { fromIni } from "@aws-sdk/credential-provider-ini";
+
+function isMetadataBearer(error: unknown): error is MetadataBearer {
+  return error instanceof Error && "$metadata" in error;
+}
+
+function is404Error(error: unknown) {
+  return isMetadataBearer(error) && error.$metadata.httpStatusCode === 404;
+}
 
 export class Bucket {
-  constructor(
-    private s3Client: S3Client,
-    private bucket: string,
-    private prefix: string
-  ) {}
-  async init() {
-    const response = await this.s3Client.send(
+  private s3Client = new S3Client({});
+
+  constructor(private bucket: string, private prefix: string) {}
+
+  async init(profile: string) {
+    if (profile) {
+      this.s3Client = new S3Client({
+        credentials: fromIni({ profile }),
+      });
+    }
+
+    const { LocationConstraint } = await this.s3Client.send(
       new GetBucketLocationCommand({ Bucket: this.bucket })
     );
-    this.s3Client = new S3Client({ region: response.LocationConstraint });
+
+    const { region, credentials } = this.s3Client.config;
+    if (region !== LocationConstraint)
+      this.s3Client = new S3Client({
+        region: LocationConstraint,
+        credentials,
+      });
   }
 
   async headObject(hash: string) {
@@ -62,6 +83,6 @@ export class Bucket {
   }
 
   private key(hash: string) {
-    return `${this.prefix}/${hash}`;
+    return `${this.prefix}/objects/${hash}`;
   }
 }
