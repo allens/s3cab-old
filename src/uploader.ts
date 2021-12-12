@@ -1,3 +1,5 @@
+import prettyBytes = require("pretty-bytes");
+
 import { Bucket } from "./bucket";
 import { snapshotWrite } from "./snapshot";
 import { FileInfo, getFileInfo } from "./util/file";
@@ -9,30 +11,44 @@ export class Uploader {
   async uploadFiles(backupPaths: string[]) {
     for (const path of backupPaths) {
       try {
-        T.start(path);
+        T.start(`Calculating hash for ${path}`);
         const fileInfo = await getFileInfo(path);
-        T.stop(fileInfo.hash);
-        const uploaded = await this.upload(fileInfo);
-        if (uploaded) {
-          await snapshotWrite(this.snapshot, [fileInfo]);
+
+        const objectExists = await this.objectExists(fileInfo);
+        if (objectExists) {
+          T.stop(`${fileInfo.hash} (already uploaded)`);
+        } else {
+          T.stop(`${fileInfo.hash}`);
+          await this.upload(fileInfo);
         }
+
+        await snapshotWrite(this.snapshot, [fileInfo]);
       } catch (error) {
         T.stop(`${error}`);
       }
     }
   }
 
-  private async upload(fileInfo: FileInfo) {
-    const { hash } = fileInfo;
-    try {
-      const objectExists = await this.bucket.headObject(hash);
-
-      if (!objectExists) {
-        T.start("    uploading");
-        await this.bucket.putObject(fileInfo);
-        T.stop();
+  private async objectExists(fileInfo: FileInfo) {
+    const response = await this.bucket.headObject(fileInfo.hash);
+    if (response) {
+      const { ContentLength } = response;
+      if (ContentLength === fileInfo.size) {
+        return true;
+      } else {
+        console.warn(
+          `Size mismatch: ContentLength = ${ContentLength}, size = ${fileInfo.size} `
+        );
       }
-      return true;
+    }
+    return false;
+  }
+
+  private async upload(fileInfo: FileInfo) {
+    try {
+      T.start(`    Uploading ${prettyBytes(fileInfo.size)}`);
+      await this.bucket.putObject(fileInfo);
+      T.stop();
     } catch (error) {
       T.stop(`${error}`);
     }

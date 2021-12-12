@@ -4,8 +4,7 @@ import {
   PutObjectCommand,
   S3Client,
 } from "@aws-sdk/client-s3";
-import { join } from "path";
-import { isMetadataBearer } from "./util/aws";
+import { is404Error } from "./util/aws";
 import { FileInfo } from "./util/file";
 
 export class Bucket {
@@ -24,24 +23,23 @@ export class Bucket {
   async headObject(hash: string) {
     const command = new HeadObjectCommand({
       Bucket: this.bucket,
-      Key: join(this.prefix, hash),
+      Key: this.key(hash),
     });
 
     try {
-      await this.s3Client.send(command);
-      return true;
+      const response = await this.s3Client.send(command);
+      return response;
     } catch (error) {
-      if (isMetadataBearer(error) && error.$metadata.httpStatusCode === 404) {
-        return false;
+      if (!is404Error(error)) {
+        throw error;
       }
-      throw error;
     }
   }
 
   async putObject(fileInfo: FileInfo) {
     const command = new PutObjectCommand({
       Bucket: this.bucket,
-      Key: join(this.prefix, fileInfo.hash),
+      Key: this.key(fileInfo.hash),
     });
 
     try {
@@ -50,5 +48,9 @@ export class Bucket {
       console.log(error);
       throw error;
     }
+  }
+
+  private key(hash: string) {
+    return `${this.prefix}/${hash}`;
   }
 }

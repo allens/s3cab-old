@@ -37,10 +37,11 @@ export default class Backup extends Command {
   async run() {
     const { args, flags } = this.parse(Backup);
 
-    const rootFolder = "test/fixtures/my-precious-data";
+    // const rootFolder = "test/fixtures/my-precious-data";
     // const rootFolder = "C:\\Program Files";
     // const rootFolder = "C:\\Users\\shielsa\\OneDrive - Innovyze, INC";
     // const rootFolder = "C:\\Windows";
+    const rootFolder = "C:\\Users\\shielsa\\tmp";
 
     const unmodified: FileInfo[] = [];
     const added: string[] = [];
