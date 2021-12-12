@@ -9,7 +9,7 @@ import { join } from "path";
 
 export interface FileInfo {
   path: string;
-  mtimeMs: number;
+  mtime: Date;
   size: number;
   hash: string;
 }
@@ -51,8 +51,8 @@ export function* walkSync(dir: string): Generator<string> {
 export async function isModified(fileInfo: FileInfo) {
   if (fileInfo !== undefined) {
     try {
-      const { mtimeMs, size } = await fsPromises.stat(fileInfo.path);
-      return fileInfo.mtimeMs !== mtimeMs || fileInfo.size !== size;
+      const { mtime, size } = await fsPromises.stat(fileInfo.path);
+      return fileInfo.mtime !== mtime || fileInfo.size !== size;
     } catch (error) {
       console.error(error);
     }
@@ -62,8 +62,8 @@ export async function isModified(fileInfo: FileInfo) {
 export function isModifiedSync(fileInfo: FileInfo) {
   if (fileInfo !== undefined) {
     try {
-      const { mtimeMs, size } = statSync(fileInfo.path);
-      return fileInfo.mtimeMs !== mtimeMs || fileInfo.size !== size;
+      const { mtime, size } = statSync(fileInfo.path);
+      return fileInfo.mtime !== mtime || fileInfo.size !== size;
     } catch (error) {
       console.error(error);
     }
@@ -71,9 +71,9 @@ export function isModifiedSync(fileInfo: FileInfo) {
 }
 
 export async function getFileInfo(path: string) {
-  const { mtimeMs, size } = await fsPromises.stat(path);
+  const { mtime, size } = await fsPromises.stat(path);
   const hash = await checksumFile(path);
-  return { path, hash, mtimeMs, size };
+  return { path, hash, mtime, size };
 }
 
 function checksumFile(path: string) {

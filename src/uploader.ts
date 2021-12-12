@@ -11,7 +11,7 @@ export class Uploader {
   async uploadFiles(backupPaths: string[]) {
     for (const path of backupPaths) {
       try {
-        T.start(`${path}: Calculating hash`);
+        T.start(`hash: ${path}`);
         const fileInfo = await getFileInfo(path);
         T.stop();
 
@@ -19,7 +19,7 @@ export class Uploader {
 
         if (objectExists) {
           console.log(
-            `    Skipping upload of ${fileInfo.hash}, already exists in bucket.`
+            `    ignore: ${fileInfo.hash} (already exists in bucket)`
           );
         } else {
           await this.upload(fileInfo);
@@ -49,7 +49,7 @@ export class Uploader {
 
   private async upload(fileInfo: FileInfo) {
     try {
-      T.start(`    Uploading ${fileInfo.hash} (${prettyBytes(fileInfo.size)})`);
+      T.start(`    upload: ${fileInfo.hash} (${prettyBytes(fileInfo.size)})`);
       await this.bucket.putObject(fileInfo);
       T.stop();
     } catch (error) {

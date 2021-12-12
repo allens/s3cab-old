@@ -46,9 +46,9 @@ export class Bucket {
       Metadata: {
         "x-amz-meta-s3pac-path": fileInfo.path,
         "x-amz-meta-s3pac-size": fileInfo.size.toString(),
-        "x-amz-meta-s3pac-mtimeMs": fileInfo.mtimeMs.toString(),
+        "x-amz-meta-s3pac-mtime": fileInfo.mtime.getTime().toString(),
         "x-amz-meta-s3pac-hash": fileInfo.hash,
-        "x-amz_meta-s3pac-mtime": new Date(fileInfo.mtimeMs).toString(),
+        "x-amz-meta-s3pac-mtime-string": fileInfo.mtime.toString(),
       },
       Body: fileStream,
     });
