@@ -1,6 +1,7 @@
 import {
   GetBucketLocationCommand,
   HeadObjectCommand,
+  ListObjectsV2Command,
   PutObjectCommand,
   S3Client,
 } from "@aws-sdk/client-s3";
@@ -27,8 +28,15 @@ async function getBucketRegion(s3Client: S3Client, bucket: string) {
 
 export class Bucket {
   private s3Client = new S3Client({});
+  readonly objectsPrefix: string;
 
-  constructor(private bucket: string, private prefix: string) {}
+  constructor(private bucket: string, prefix: string) {
+    this.objectsPrefix = `${prefix}/objects`;
+  }
+
+  private key(hash: string) {
+    return `${this.objectsPrefix}/${hash}`;
+  }
 
   async init(profile?: string) {
     let { credentials } = this.s3Client.config;
@@ -42,6 +50,24 @@ export class Bucket {
     if (region !== this.s3Client.config.region) {
       this.s3Client = new S3Client({ credentials, region });
     }
+  }
+
+  async *getInventory() {
+    const command = new ListObjectsV2Command({
+      Bucket: this.bucket,
+      Prefix: this.objectsPrefix,
+    });
+    do {
+      const { Contents, ContinuationToken } = await this.s3Client.send(command);
+      command.input.ContinuationToken = ContinuationToken;
+      if (Contents) {
+        yield Contents.map((o) => o.Key)
+          .filter((key): key is string => !!key)
+          .map((key) => key.slice(this.objectsPrefix.length + 1));
+      } else {
+        yield [];
+      }
+    } while (command.input.ContinuationToken);
   }
 
   async headObject(hash: string) {
@@ -82,9 +108,5 @@ export class Bucket {
       console.log(error);
       throw error;
     }
-  }
-
-  private key(hash: string) {
-    return `${this.prefix}/objects/${hash}`;
   }
 }

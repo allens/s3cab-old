@@ -4,19 +4,35 @@ import { FileInfo, getFileInfo } from "./util/file";
 
 import { Bucket } from "./s3";
 import { T } from "./util/logging";
+import { existsSync } from "fs";
 import { snapshotWrite } from "./snapshot";
+
+async function getInventory(bucket: Bucket) {
+  const inventory = new Set<string>();
+  const exists = existsSync("inventory.csv");
+  if (!exists) {
+    for await (const keys of bucket.getInventory()) {
+      keys.forEach((key) => {
+        inventory.add(key);
+      });
+    }
+  }
+  return inventory;
+}
 
 export class Uploader {
   constructor(private snapshot: string, private bucket: Bucket) {}
 
   async uploadFiles(backupPaths: string[]) {
+    const inventory = await getInventory(this.bucket);
+
     for (const path of backupPaths) {
       try {
         T.start(`hash: ${path}`);
         const fileInfo = await getFileInfo(path);
         T.stop();
 
-        const objectExists = await this.objectExists(fileInfo);
+        const objectExists = inventory.has(fileInfo.hash);
 
         if (objectExists) {
           console.log(
