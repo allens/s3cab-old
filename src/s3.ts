@@ -61,11 +61,11 @@ export class Bucket {
       const { Contents, ContinuationToken } = await this.s3Client.send(command);
       command.input.ContinuationToken = ContinuationToken;
       if (Contents) {
-        yield Contents.map((o) => o.Key)
-          .filter((key): key is string => !!key)
-          .map((key) => key.slice(this.objectsPrefix.length + 1));
-      } else {
-        yield [];
+        yield* Array.from(
+          Contents.map((o) => o.Key)
+            .filter((key): key is string => !!key)
+            .map((key) => key.slice(this.objectsPrefix.length + 1))
+        );
       }
     } while (command.input.ContinuationToken);
   }
