@@ -13,7 +13,7 @@ export class T {
     T._t = performance.now();
   }
   static done(msg = "done") {
-    return T.seconds ? `${msg} in ${T.seconds} seconds` : msg;
+    return T.seconds ? `${msg} [${T.seconds} seconds]` : msg;
   }
   static start(action: string) {
     T.reset();

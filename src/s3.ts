@@ -26,7 +26,22 @@ async function getBucketRegion(s3Client: S3Client, bucket: string) {
   return LocationConstraint;
 }
 
-export class Bucket {
+async function objectExists(
+  client: S3Client,
+  input: { Bucket: string; Key: string }
+) {
+  try {
+    await client.send(new HeadObjectCommand(input));
+    return true;
+  } catch (error) {
+    if (is404Error(error)) {
+      return false;
+    }
+    throw error;
+  }
+}
+
+export class S3Bucket {
   private s3Client = new S3Client({});
   readonly objectsPrefix: string;
 
@@ -68,22 +83,6 @@ export class Bucket {
         );
       }
     } while (command.input.ContinuationToken);
-  }
-
-  async headObject(hash: string) {
-    const command = new HeadObjectCommand({
-      Bucket: this.bucket,
-      Key: this.key(hash),
-    });
-
-    try {
-      const response = await this.s3Client.send(command);
-      return response;
-    } catch (error) {
-      if (!is404Error(error)) {
-        throw error;
-      }
-    }
   }
 
   async putObject(fileInfo: FileInfo) {

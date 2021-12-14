@@ -1,3 +1,4 @@
+import { Bucket, S3Bucket } from "../s3";
 import { Command, flags } from "@oclif/command";
 import { FileInfo, getIsNewOrModifiedFilter, walkSync } from "../util/file";
 import {
@@ -7,7 +8,6 @@ import {
   snapshotWrite,
 } from "../snapshot";
 
-import { Bucket } from "../s3";
 import { T } from "../util/logging";
 import { Uploader } from "../uploader";
 
@@ -33,13 +33,13 @@ export default class Backup extends Command {
     const bucketName = "s3cab-testing";
     const bucketPrefix = "testing-prefix";
 
-    // const rootFolder = "test/fixtures/my-precious-data";
+    const rootFolder = "test/fixtures/my-precious-data";
     // const rootFolder = "C:\\Program Files";
     // const rootFolder = "C:\\Users\\shielsa\\OneDrive - Innovyze, INC";
     // const rootFolder = "C:\\Windows";
-    const rootFolder = "C:\\Users\\shielsa\\tmp";
+    // const rootFolder = "C:\\Users\\shielsa\\tmp";
 
-    const bucket = new Bucket(bucketName, bucketPrefix);
+    const bucket = new S3Bucket(bucketName, bucketPrefix);
 
     await bucket.init(profile);
 

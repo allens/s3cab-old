@@ -4,6 +4,7 @@ import { FileInfo, getFileInfo } from "./util/file";
 
 import { Bucket } from "./s3";
 import { T } from "./util/logging";
+import { cli } from "cli-ux";
 import { existsSync } from "fs";
 import { snapshotWrite } from "./snapshot";
 
@@ -26,17 +27,13 @@ export class Uploader {
 
     for (const path of backupPaths) {
       try {
-        T.start(`hash: ${path}`);
+        cli.action.start(`hash: ${path}`);
         const fileInfo = await getFileInfo(path);
-        T.stop();
 
-        const objectExists = inventory.has(fileInfo.hash);
-
-        if (objectExists) {
-          console.log(
-            `    ignore: ${fileInfo.hash} (already exists in bucket)`
-          );
+        if (inventory.has(fileInfo.hash)) {
+          cli.action.stop("already exists");
         } else {
+          cli.action.stop("missing");
           await this.upload(fileInfo);
         }
 
