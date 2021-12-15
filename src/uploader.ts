@@ -2,7 +2,7 @@ import prettyBytes = require("pretty-bytes");
 
 import { FileInfo, getFileInfo } from "./util/file";
 
-import { Bucket } from "./s3";
+import { S3Bucket } from "./s3";
 import { T } from "./util/logging";
 import { cli } from "cli-ux";
 import { existsSync } from "fs";
@@ -19,53 +19,40 @@ async function getInventory(bucket: Bucket) {
   return inventory;
 }
 
-export class Uploader {
-  constructor(private snapshot: string, private bucket: Bucket) {}
+export async function uploadFiles(
+  bucket: S3Bucket,
+  snapshot: string,
+  backupPaths: string[],
+  force?: boolean
+) {
+  const inventory = await getInventory(bucket);
 
-  async uploadFiles(backupPaths: string[]) {
-    const inventory = await getInventory(this.bucket);
-
-    for (const path of backupPaths) {
-      try {
-        cli.action.start(`hash: ${path}`);
-        const fileInfo = await getFileInfo(path);
-
-        if (inventory.has(fileInfo.hash)) {
-          cli.action.stop("already exists");
-        } else {
-          cli.action.stop("missing");
-          await this.upload(fileInfo);
-        }
-
-        await snapshotWrite(this.snapshot, [fileInfo]);
-      } catch (error) {
-        console.error(`${error}`);
-      }
-    }
-  }
-
-  private async objectExists(fileInfo: FileInfo) {
-    const response = await this.bucket.headObject(fileInfo.hash);
-    if (response) {
-      const { ContentLength } = response;
-      if (ContentLength === fileInfo.size) {
-        return true;
-      } else {
-        console.warn(
-          `    WARNING: Size mismatch - ContentLength is ${ContentLength} but size = ${fileInfo.size} `
-        );
-      }
-    }
-    return false;
-  }
-
-  private async upload(fileInfo: FileInfo) {
+  for (const path of backupPaths) {
     try {
-      T.start(`    upload: ${fileInfo.hash} (${prettyBytes(fileInfo.size)})`);
-      await this.bucket.putObject(fileInfo);
-      T.stop();
+      cli.action.start(`hash: ${path}`);
+      const fileInfo = await getFileInfo(path);
+
+      const has = inventory.has(fileInfo.hash);
+
+      cli.action.stop(has ? "already exists" : "missing");
+
+      if (!has || force) {
+        await upload(bucket, fileInfo);
+      }
+
+      await snapshotWrite(snapshot, [fileInfo]);
     } catch (error) {
-      T.stop(`${error}`);
+      console.error(`${error}`);
     }
+  }
+}
+
+export async function upload(bucket: S3Bucket, fileInfo: FileInfo) {
+  try {
+    T.start(`    upload: ${fileInfo.hash} (${prettyBytes(fileInfo.size)})`);
+    await bucket.putObject(fileInfo);
+    T.stop();
+  } catch (error) {
+    T.stop(`${error}`);
   }
 }

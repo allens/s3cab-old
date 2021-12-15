@@ -9,7 +9,6 @@ import {
 import { FileInfo } from "./util/file";
 import { MetadataBearer } from "@aws-sdk/types";
 import { createReadStream } from "fs";
-import { fromIni } from "@aws-sdk/credential-provider-ini";
 
 function isMetadataBearer(error: unknown): error is MetadataBearer {
   return error instanceof Error && "$metadata" in error;
@@ -19,7 +18,7 @@ function is404Error(error: unknown) {
   return isMetadataBearer(error) && error.$metadata.httpStatusCode === 404;
 }
 
-async function getBucketRegion(s3Client: S3Client, bucket: string) {
+export async function getBucketRegion(s3Client: S3Client, bucket: string) {
   const { LocationConstraint } = await s3Client.send(
     new GetBucketLocationCommand({ Bucket: bucket })
   );
@@ -42,29 +41,18 @@ async function objectExists(
 }
 
 export class S3Bucket {
-  private s3Client = new S3Client({});
   readonly objectsPrefix: string;
 
-  constructor(private bucket: string, prefix: string) {
+  constructor(
+    private s3Client: S3Client,
+    private bucket: string,
+    prefix: string
+  ) {
     this.objectsPrefix = `${prefix}/objects`;
   }
 
   private key(hash: string) {
     return `${this.objectsPrefix}/${hash}`;
-  }
-
-  async init(profile?: string) {
-    let { credentials } = this.s3Client.config;
-    if (profile) {
-      credentials = fromIni({ profile });
-      this.s3Client = new S3Client({ credentials });
-    }
-
-    const region = await getBucketRegion(this.s3Client, this.bucket);
-
-    if (region !== this.s3Client.config.region) {
-      this.s3Client = new S3Client({ credentials, region });
-    }
   }
 
   async *getInventory() {

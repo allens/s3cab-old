@@ -1,4 +1,4 @@
-import { Bucket, S3Bucket } from "../s3";
+import { Bucket, S3Bucket, getBucketRegion } from "../s3";
 import { Command, flags } from "@oclif/command";
 import { FileInfo, getIsNewOrModifiedFilter, walkSync } from "../util/file";
 import {
@@ -9,7 +9,8 @@ import {
 } from "../snapshot";
 
 import { T } from "../util/logging";
-import { Uploader } from "../uploader";
+import { createS3Client } from "../lib/s3Client";
+import { uploadFiles } from "../uploader";
 
 export default class Backup extends Command {
   static description = "describe the command here";
@@ -20,6 +21,8 @@ export default class Backup extends Command {
     name: flags.string({ char: "n", description: "name to print" }),
     // flag with no value (-f, --force)
     force: flags.boolean({ char: "f" }),
+    profile: flags.string({ char: "p", description: "AWS profile" }),
+    endpoint: flags.string({ char: "e", description: "AWS S3 endpoint" }),
   };
 
   static args = [{ name: "file" }];
@@ -29,7 +32,10 @@ export default class Backup extends Command {
   async run() {
     const { args, flags } = this.parse(Backup);
 
-    const profile = "thehousecat";
+    const { profile, endpoint } = flags;
+    let accessKeyId: string;
+    let secretAccessKey: string;
+
     const bucketName = "s3cab-testing";
     const bucketPrefix = "testing-prefix";
 
@@ -39,9 +45,10 @@ export default class Backup extends Command {
     // const rootFolder = "C:\\Windows";
     // const rootFolder = "C:\\Users\\shielsa\\tmp";
 
-    const bucket = new S3Bucket(bucketName, bucketPrefix);
-
-    await bucket.init(profile);
+    const s3Client = createS3Client({
+      profile,
+      endpoint,
+    });
 
     const unmodified: FileInfo[] = [];
     const added: string[] = [];
@@ -71,8 +78,16 @@ export default class Backup extends Command {
 
     await snapshotWrite(newSnapshotPath, unmodified);
 
-    const uploader = new Uploader(newSnapshotPath, bucket);
+    const bucket = new S3Bucket(
+      createS3Client({
+        region: await getBucketRegion(s3Client, bucketName),
+        endpoint,
+        profile,
+      }),
+      bucketName,
+      bucketPrefix
+    );
 
-    await uploader.uploadFiles(filesToBackup);
+    await uploadFiles(bucket, newSnapshotPath, filesToBackup, flags.force);
   }
 }
