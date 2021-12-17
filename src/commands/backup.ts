@@ -9,7 +9,7 @@ import {
 } from "../snapshot";
 
 import { BucketObjects } from "../lib/BucketObjects";
-import { T } from "../util/logging";
+import { Logging } from "../util/logging";
 import { uploadFiles } from "../uploader";
 
 export default class Backup extends Command {
@@ -51,9 +51,9 @@ export default class Backup extends Command {
     const unmodified: FileInfo[] = [];
     const added: string[] = [];
 
-    T.start(`Searching "${rootFolder}"`);
+    Logging.start(`Searching "${rootFolder}"`);
     let filesToBackup = Array.from(walkSync(rootFolder));
-    T.stop(`found ${filesToBackup.length} files`);
+    Logging.stop(`found ${filesToBackup.length} files`);
 
     const latestSnapshotPath = await getLatestSnapshotPath();
     const latestSnapshot = await snapshotRead(latestSnapshotPath);

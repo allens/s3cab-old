@@ -1,25 +1,24 @@
+import * as prettyMilliseconds from "pretty-ms";
+
 import { cli } from "cli-ux";
 import { performance } from "perf_hooks";
 
-export class T {
+export class Logging {
   private static _t: number;
   static get ms() {
-    return performance.now() - T._t;
-  }
-  static get seconds() {
-    return Math.round(T.ms / 1000);
+    return performance.now() - Logging._t;
   }
   static reset() {
-    T._t = performance.now();
+    Logging._t = performance.now();
   }
   static done(msg = "done") {
-    return T.seconds ? `${msg} [${T.seconds} seconds]` : msg;
+    return `${msg} in ${prettyMilliseconds(Logging.ms)}`;
   }
   static start(action: string) {
-    T.reset();
+    Logging.reset();
     cli.action.start(action);
   }
   static stop(msg?: string) {
-    cli.action.stop(T.done(msg));
+    cli.action.stop(Logging.done(msg));
   }
 }

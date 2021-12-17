@@ -3,7 +3,7 @@ import prettyBytes = require("pretty-bytes");
 import { FileInfo, getFileInfo } from "./util/file";
 
 import { BucketObjects } from "./lib/BucketObjects";
-import { T } from "./util/logging";
+import { Logging } from "./util/logging";
 import { cli } from "cli-ux";
 import { existsSync } from "fs";
 import { snapshotWrite } from "./snapshot";
@@ -49,10 +49,12 @@ export async function uploadFiles(
 
 export async function upload(bucket: BucketObjects, fileInfo: FileInfo) {
   try {
-    T.start(`    upload: ${fileInfo.hash} (${prettyBytes(fileInfo.size)})`);
+    Logging.start(
+      `    upload: ${fileInfo.hash} (${prettyBytes(fileInfo.size)})`
+    );
     await bucket.upload(fileInfo);
-    T.stop();
+    Logging.stop();
   } catch (error) {
-    T.stop(`${error}`);
+    Logging.stop(`${error}`);
   }
 }
