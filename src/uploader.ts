@@ -50,7 +50,7 @@ export async function uploadFiles(
 export async function upload(bucket: BucketObjects, fileInfo: FileInfo) {
   try {
     T.start(`    upload: ${fileInfo.hash} (${prettyBytes(fileInfo.size)})`);
-    await bucket.putObject(fileInfo);
+    await bucket.upload(fileInfo);
     T.stop();
   } catch (error) {
     T.stop(`${error}`);
