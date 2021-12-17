@@ -46,9 +46,11 @@ USAGE
   $ s3cab backup [FILE]
 
 OPTIONS
+  -e, --endpoint=endpoint  AWS S3 endpoint
   -f, --force
-  -h, --help       show CLI help
-  -n, --name=name  name to print
+  -h, --help               show CLI help
+  -n, --name=name          name to print
+  -p, --profile=profile    AWS profile
 ```
 
 _See code: [src/commands/backup.ts](https://github.com/allens/s3cab/blob/v0.0.0/src/commands/backup.ts)_

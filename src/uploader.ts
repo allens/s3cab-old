@@ -2,25 +2,25 @@ import prettyBytes = require("pretty-bytes");
 
 import { FileInfo, getFileInfo } from "./util/file";
 
-import { S3Bucket } from "./s3";
+import { BucketObjects } from "./lib/BucketObjects";
 import { T } from "./util/logging";
 import { cli } from "cli-ux";
 import { existsSync } from "fs";
 import { snapshotWrite } from "./snapshot";
 
-async function getInventory(bucket: Bucket) {
+async function getInventory(bucket: BucketObjects) {
   const inventory = new Set<string>();
   const exists = existsSync("inventory.csv");
   if (!exists) {
     for await (const key of bucket.getInventory()) {
-      inventory.add(key);
+      key && inventory.add(key);
     }
   }
   return inventory;
 }
 
 export async function uploadFiles(
-  bucket: S3Bucket,
+  bucket: BucketObjects,
   snapshot: string,
   backupPaths: string[],
   force?: boolean
@@ -47,7 +47,7 @@ export async function uploadFiles(
   }
 }
 
-export async function upload(bucket: S3Bucket, fileInfo: FileInfo) {
+export async function upload(bucket: BucketObjects, fileInfo: FileInfo) {
   try {
     T.start(`    upload: ${fileInfo.hash} (${prettyBytes(fileInfo.size)})`);
     await bucket.putObject(fileInfo);

@@ -1,6 +1,6 @@
-import { Bucket, S3Bucket, getBucketRegion } from "../s3";
 import { Command, flags } from "@oclif/command";
 import { FileInfo, getIsNewOrModifiedFilter, walkSync } from "../util/file";
+import { createS3Client, getBucketRegion } from "../lib/s3Client";
 import {
   getLatestSnapshotPath,
   getNewSnapshotPath,
@@ -8,8 +8,8 @@ import {
   snapshotWrite,
 } from "../snapshot";
 
+import { BucketObjects } from "../lib/BucketObjects";
 import { T } from "../util/logging";
-import { createS3Client } from "../lib/s3Client";
 import { uploadFiles } from "../uploader";
 
 export default class Backup extends Command {
@@ -26,8 +26,6 @@ export default class Backup extends Command {
   };
 
   static args = [{ name: "file" }];
-
-  private _bucket: Bucket | undefined;
 
   async run() {
     const { args, flags } = this.parse(Backup);
@@ -78,7 +76,7 @@ export default class Backup extends Command {
 
     await snapshotWrite(newSnapshotPath, unmodified);
 
-    const bucket = new S3Bucket(
+    const bucket = new BucketObjects(
       createS3Client({
         region: await getBucketRegion(s3Client, bucketName),
         endpoint,
