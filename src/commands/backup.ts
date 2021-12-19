@@ -2,7 +2,6 @@ import * as prettyMilliseconds from "pretty-ms";
 
 import { Command, flags } from "@oclif/command";
 import { FileInfo, getIsNewOrModifiedFilter, walkSync } from "../util/file";
-import { createS3Client, getBucketRegion } from "../lib/s3Client";
 import {
   getLatestSnapshotPath,
   getNewSnapshotPath,
@@ -12,6 +11,7 @@ import {
 
 import { BucketObjects } from "../lib/BucketObjects";
 import { Logging } from "../util/logging";
+import { createS3Client } from "../lib/s3Client";
 import { uploadFiles } from "../uploader";
 
 export default class Backup extends Command {
@@ -43,22 +43,9 @@ export default class Backup extends Command {
     // const rootFolder = "C:\\Users\\shielsa\\OneDrive - Innovyze, INC";
     // const rootFolder = "C:\\Windows";
     // const rootFolder = "C:\\data\\s3cab";
+    const s3Client = await createS3Client({ profile, endpoint }, bucketName);
 
-    const bucket = new BucketObjects(
-      createS3Client({
-        region: await getBucketRegion(
-          createS3Client({
-            profile,
-            endpoint,
-          }),
-          bucketName
-        ),
-        endpoint,
-        profile,
-      }),
-      bucketName,
-      bucketPrefix
-    );
+    const bucket = new BucketObjects(s3Client, bucketName, bucketPrefix);
 
     const unmodified: FileInfo[] = [];
     const added: string[] = [];

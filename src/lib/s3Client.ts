@@ -20,7 +20,10 @@ interface CreateS3ClientConfig {
   };
 }
 
-export function createS3Client(createConfig: CreateS3ClientConfig) {
+export async function createS3Client(
+  createConfig: CreateS3ClientConfig,
+  bucket?: string
+): Promise<S3Client> {
   const { profile, credentials, endpoint, region } = createConfig;
   const configuration: S3ClientConfig = {
     credentials,
@@ -32,6 +35,11 @@ export function createS3Client(createConfig: CreateS3ClientConfig) {
   }
 
   const client = new S3Client(configuration);
+
+  if (bucket) {
+    const region = await getBucketRegion(client, bucket);
+    return createS3Client({ ...createConfig, region });
+  }
 
   return client;
 }
