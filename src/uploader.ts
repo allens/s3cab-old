@@ -1,6 +1,6 @@
 import prettyBytes = require("pretty-bytes");
 
-import { FileInfo, HashAlgo, getFileInfo } from "./util/file";
+import { FileInfo, getFileInfo } from "./util/file";
 
 import { BucketObjects } from "./lib/BucketObjects";
 import { Logging } from "./util/logging";
@@ -25,13 +25,12 @@ export async function uploadFiles(
   force?: boolean,
   noupload?: boolean
 ) {
-  const hashAlgo: HashAlgo = "xxhash";
   const inventory = await getInventory(bucket);
 
   for (const path of backupPaths) {
     try {
       Logging.start(`hash: ${path}`);
-      const fileInfo = await getFileInfo(path, hashAlgo);
+      const fileInfo = await getFileInfo(path);
       const has = inventory.has(fileInfo.hash);
       Logging.stop(has ? "already exists" : "missing");
 

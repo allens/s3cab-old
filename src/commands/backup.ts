@@ -38,8 +38,8 @@ export default class Backup extends Command {
     const bucketName = "s3cab-testing";
     const bucketPrefix = "testing-prefix";
 
-    // const rootFolder = "test/fixtures/my-precious-data";
-    const rootFolder = "C:\\Program Files";
+    const rootFolder = "test/fixtures/my-precious-data";
+    // const rootFolder = "C:\\Program Files";
     // const rootFolder = "C:\\Users\\shielsa\\OneDrive - Innovyze, INC";
     // const rootFolder = "C:\\Windows";
     // const rootFolder = "C:\\data\\s3cab";
