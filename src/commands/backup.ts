@@ -11,7 +11,11 @@ import {
 
 import { BucketObjects } from "../lib/BucketObjects";
 import { Logging } from "../util/logging";
+import { Readable } from "stream";
 import { createS3Client } from "../lib/s3Client";
+import { createWriteStream } from "fs";
+import { join } from "path";
+import { stringify } from "csv-stringify";
 import { uploadFiles } from "../uploader";
 
 export default class Backup extends Command {
@@ -46,6 +50,25 @@ export default class Backup extends Command {
     const s3Client = await createS3Client({ profile, endpoint }, bucketName);
 
     const bucket = new BucketObjects(s3Client, bucketName, bucketPrefix);
+
+    const inventoryPath = join(this.config.cacheDir, "inventory.csv");
+    const updateInventory = true;
+    if (updateInventory) {
+      const writer = createWriteStream(inventoryPath);
+      const stringifier = stringify({
+        header: true,
+        columns: ["Key", "Size", "LastModified"],
+      });
+      stringifier.pipe(writer);
+      Readable.from(bucket.getInventory()).pipe(stringifier);
+    }
+
+    // Read
+    // const stream = await createReadStream(inventoryPath).pipe(parse());
+    // for await (const record of stream) {
+    //   console.log(record);
+    //   await new Promise((resolve) => setTimeout(resolve, 100));
+    // }
 
     const unmodified: FileInfo[] = [];
     const added: string[] = [];

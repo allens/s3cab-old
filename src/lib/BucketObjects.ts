@@ -24,12 +24,13 @@ export class BucketObjects {
   }
 
   async *getInventory() {
-    const prefixLength = this.prefix.length;
+    const start = this.prefix.length + 1;
     for await (const obj of listObjects(this.s3Client, {
       Bucket: this.bucket,
       Prefix: this.prefix,
     })) {
-      yield obj.Key?.slice(prefixLength);
+      const { Key, Size, LastModified } = obj;
+      yield { Key, Size, LastModified };
     }
   }
 
