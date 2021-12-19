@@ -1,10 +1,9 @@
 import prettyBytes = require("pretty-bytes");
 
-import { FileInfo, getFileInfo } from "./util/file";
+import { FileInfo, HashAlgo, getFileInfo } from "./util/file";
 
 import { BucketObjects } from "./lib/BucketObjects";
 import { Logging } from "./util/logging";
-import { cli } from "cli-ux";
 import { existsSync } from "fs";
 import { snapshotWrite } from "./snapshot";
 
@@ -23,21 +22,21 @@ export async function uploadFiles(
   bucket: BucketObjects,
   snapshot: string,
   backupPaths: string[],
-  force?: boolean
+  force?: boolean,
+  noupload?: boolean
 ) {
+  const hashAlgo: HashAlgo = "xxhash";
   const inventory = await getInventory(bucket);
 
   for (const path of backupPaths) {
     try {
-      cli.action.start(`hash: ${path}`);
-      const fileInfo = await getFileInfo(path);
-
+      Logging.start(`hash: ${path}`);
+      const fileInfo = await getFileInfo(path, hashAlgo);
       const has = inventory.has(fileInfo.hash);
-
-      cli.action.stop(has ? "already exists" : "missing");
+      Logging.stop(has ? "already exists" : "missing");
 
       if (!has || force) {
-        await upload(bucket, fileInfo);
+        await upload(bucket, fileInfo, noupload);
       }
 
       await snapshotWrite(snapshot, [fileInfo]);
@@ -47,12 +46,18 @@ export async function uploadFiles(
   }
 }
 
-export async function upload(bucket: BucketObjects, fileInfo: FileInfo) {
+export async function upload(
+  bucket: BucketObjects,
+  fileInfo: FileInfo,
+  noupload?: boolean
+) {
   try {
     Logging.start(
       `    upload: ${fileInfo.hash} (${prettyBytes(fileInfo.size)})`
     );
-    await bucket.upload(fileInfo);
+    if (!noupload) {
+      await bucket.upload(fileInfo);
+    }
     Logging.stop();
   } catch (error) {
     Logging.stop(`${error}`);

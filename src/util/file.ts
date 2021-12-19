@@ -1,10 +1,13 @@
-import { createHash } from "crypto";
+import { Hash, createHash } from "crypto";
 import {
   createReadStream,
   promises as fsPromises,
   readdirSync,
   statSync,
 } from "fs";
+
+import { XXHash64 } from "xxhash-addon";
+import { h64 } from "xxhashjs";
 import { join } from "path";
 
 export interface FileInfo {
@@ -70,19 +73,32 @@ export function isModifiedSync(fileInfo: FileInfo) {
   }
 }
 
-export async function getFileInfo(path: string) {
+export async function getFileInfo(path: string, hashAlgo: HashAlgo) {
   const { mtime, size } = await fsPromises.stat(path);
-  const hash = await checksumFile(path);
+  const hash = await checksumFile(path, hashAlgo);
   return { path, hash, mtime, size };
 }
 
-function checksumFile(path: string) {
+export type HashAlgo = "sha256" | "xxhash" | "xxhashjs";
+
+function getHash(algo: HashAlgo) {
+  if (algo === "sha256") {
+    return createHash("sha256");
+  } else if (algo === "xxhash") {
+    return new XXHash64() as Hash;
+  } else if (algo === "xxhashjs") {
+    return h64() as unknown as Hash;
+  }
+  throw "no hash";
+}
+
+function checksumFile(path: string, hashName: HashAlgo) {
   return new Promise<string>((resolve, reject) => {
-    const hash = createHash("sha256");
+    const hash = getHash(hashName);
     const stream = createReadStream(path);
     stream.on("error", (error) => reject(error));
     stream.on("data", (data) => hash.update(data));
-    stream.on("end", () => resolve(hash.digest("hex")));
+    stream.on("end", () => resolve(hash.digest().toString("hex")));
   });
 }
 

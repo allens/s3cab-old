@@ -1,3 +1,5 @@
+import * as prettyMilliseconds from "pretty-ms";
+
 import { Command, flags } from "@oclif/command";
 import { FileInfo, getIsNewOrModifiedFilter, walkSync } from "../util/file";
 import { createS3Client, getBucketRegion } from "../lib/s3Client";
@@ -17,10 +19,8 @@ export default class Backup extends Command {
 
   static flags = {
     help: flags.help({ char: "h" }),
-    // flag with a value (-n, --name=VALUE)
-    name: flags.string({ char: "n", description: "name to print" }),
-    // flag with no value (-f, --force)
     force: flags.boolean({ char: "f" }),
+    noupload: flags.boolean({ char: "n" }),
     profile: flags.string({ char: "p", description: "AWS profile" }),
     endpoint: flags.string({ char: "e", description: "AWS S3 endpoint" }),
   };
@@ -28,6 +28,7 @@ export default class Backup extends Command {
   static args = [{ name: "file" }];
 
   async run() {
+    const start = Date.now();
     const { args, flags } = this.parse(Backup);
 
     const { profile, endpoint } = flags;
@@ -37,16 +38,27 @@ export default class Backup extends Command {
     const bucketName = "s3cab-testing";
     const bucketPrefix = "testing-prefix";
 
-    const rootFolder = "test/fixtures/my-precious-data";
-    // const rootFolder = "C:\\Program Files";
+    // const rootFolder = "test/fixtures/my-precious-data";
+    const rootFolder = "C:\\Program Files";
     // const rootFolder = "C:\\Users\\shielsa\\OneDrive - Innovyze, INC";
     // const rootFolder = "C:\\Windows";
-    // const rootFolder = "C:\\Users\\shielsa\\tmp";
+    // const rootFolder = "C:\\data\\s3cab";
 
-    const s3Client = createS3Client({
-      profile,
-      endpoint,
-    });
+    const bucket = new BucketObjects(
+      createS3Client({
+        region: await getBucketRegion(
+          createS3Client({
+            profile,
+            endpoint,
+          }),
+          bucketName
+        ),
+        endpoint,
+        profile,
+      }),
+      bucketName,
+      bucketPrefix
+    );
 
     const unmodified: FileInfo[] = [];
     const added: string[] = [];
@@ -76,16 +88,15 @@ export default class Backup extends Command {
 
     await snapshotWrite(newSnapshotPath, unmodified);
 
-    const bucket = new BucketObjects(
-      createS3Client({
-        region: await getBucketRegion(s3Client, bucketName),
-        endpoint,
-        profile,
-      }),
-      bucketName,
-      bucketPrefix
+    await uploadFiles(
+      bucket,
+      newSnapshotPath,
+      filesToBackup,
+      flags.force,
+      flags.noupload
     );
 
-    await uploadFiles(bucket, newSnapshotPath, filesToBackup, flags.force);
+    const duration = prettyMilliseconds(Date.now() - start);
+    this.log(duration);
   }
 }
