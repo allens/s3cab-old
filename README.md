@@ -36,6 +36,7 @@ USAGE
 * [`s3cab backup [FILE]`](#s3cab-backup-file)
 * [`s3cab hello [FILE]`](#s3cab-hello-file)
 * [`s3cab help [COMMAND]`](#s3cab-help-command)
+* [`s3cab legacy:backup [FILE]`](#s3cab-legacybackup-file)
 
 ## `s3cab backup [FILE]`
 
@@ -49,7 +50,7 @@ OPTIONS
   -e, --endpoint=endpoint  AWS S3 endpoint
   -f, --force
   -h, --help               show CLI help
-  -n, --name=name          name to print
+  -n, --noupload
   -p, --profile=profile    AWS profile
 ```
 
@@ -90,5 +91,23 @@ OPTIONS
   --all  see all commands in CLI
 ```
 
-_See code: [@oclif/plugin-help](https://github.com/oclif/plugin-help/blob/v3.2.7/src/commands/help.ts)_
+_See code: [@oclif/plugin-help](https://github.com/oclif/plugin-help/blob/v3.3.1/src/commands/help.ts)_
+
+## `s3cab legacy:backup [FILE]`
+
+describe the command here
+
+```
+USAGE
+  $ s3cab legacy:backup [FILE]
+
+OPTIONS
+  -e, --endpoint=endpoint  AWS S3 endpoint
+  -f, --force
+  -h, --help               show CLI help
+  -n, --noupload
+  -p, --profile=profile    AWS profile
+```
+
+_See code: [src/commands/legacy/backup.ts](https://github.com/allens/s3cab/blob/v0.0.0/src/commands/legacy/backup.ts)_
 <!-- commandsstop -->

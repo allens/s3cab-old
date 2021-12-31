@@ -12,7 +12,7 @@ async function getInventory(bucket: BucketObjects) {
   const exists = existsSync("inventory.csv");
   if (!exists) {
     for await (const key of bucket.getInventory()) {
-      key && inventory.add(key);
+      key.Key && inventory.add(key.Key);
     }
   }
   return inventory;
